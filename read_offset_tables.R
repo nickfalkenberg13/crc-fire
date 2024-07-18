@@ -11,6 +11,14 @@ process_data_file <- function(dat_file_name){
   drop_columns <- c("Yearly.July.1st.Estimates.Code", "Age.Group.Code", "Ethnicity.Code", "Race.Code")
   offset_dat <- offset_dat %>% select(!drop_columns)
   
+  # handle Alaska special case, which does not have county column
+  if(grepl("AK;", dat_file_name)){
+    offset_dat <- offset_dat %>% 
+      mutate(county = "Alaska",
+             county_code = "02900",
+             .before = "Yearly.July.1st.Estimates")
+  }
+  
   # rename remaining columns
   new_col_names <- c("county", "county_code", "year", "age", "ethnicity", "race", "count")
   names(offset_dat) <- new_col_names

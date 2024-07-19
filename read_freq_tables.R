@@ -104,8 +104,10 @@ create_surv_table <- function(freq_table){
 create_inc_table <- function(freq_table){
   freq_dt <- as.data.table(freq_table)
   
-  # removes the survival_months column and sums counts of otherwise identical rows
-  result <- freq_dt[, .(count = sum(count)), by = setdiff(names(freq_dt), c("survival_months", "count"))]
+  # removes survival_months and cause of death columns
+  # and sums counts of otherwise identical rows
+  sum_by_col <- setdiff(names(freq_dt), c("survival_months", "cod", "count"))
+  result <- freq_dt[, .(count = sum(count)), by = sum_by_col]
   
   return(result)
 }

@@ -13,7 +13,8 @@ initial_surv_mo <- function(ft){
 }
 
 read_freq_file <- function(fpath, stg, ste){
-  cases <- read.csv(fpath)
+  #cases <- read.csv(fpath)
+  cases <- fread(fpath)
   #cases <- freq_file %>% filter(Count != 0)
   initial_m <- initial_surv_mo(cases)
   names(cases) <- c("county", "year_rx", "age_group", "sex", "marital_status",

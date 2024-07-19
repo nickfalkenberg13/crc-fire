@@ -13,5 +13,5 @@ dir_surv <- paste("data/survival_table-", site, ".csv", sep = "")
 dir_inc <- paste("data/incidence_table-", site, ".csv", sep = "")
 
 # save outputs
-write.csv(freq_surv, dir_surv, row.names = F)
-write.csv(freq_inc, dir_inc, row.names = F)
+fwrite(freq_surv, dir_surv)
+fwrite(freq_inc, dir_inc)

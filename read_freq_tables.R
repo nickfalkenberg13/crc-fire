@@ -6,8 +6,9 @@ library(data.table)
 initial_surv_mo <- function(ft){
   # returns the first number in the range of survival months covered in  frequency table ft
   
-  surv_col <- names(ft)[grepl("Survival.months", names(ft))] # column name containing survival months
-  first_month <- strsplit(surv_col, split = "\\.")[[1]][3]
+  surv_col <- names(ft)[grepl("Survival months", names(ft))] # column name containing survival months
+  month_int <- strsplit(surv_col, split = " ")[[1]][3]
+  first_month <- strsplit(month_int, split = "-")[[1]][1]
   
   return(as.numeric(first_month))
 }

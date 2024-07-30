@@ -1,4 +1,4 @@
-source("read_freq_tables.R") # to read county codes
+#source("read_freq_tables.R") # to read county codes
 
 #data_inc <- fread("data/incidence_table-LEFT.csv")
 
@@ -8,7 +8,7 @@ make_grid <- function(rg){
   county_codes <- read_county_codes(county_codes_path)
   
   # table with every combination of variable values
-  grd <- expand.grid(county = county_codes$code,
+  grd <- expand.grid(code = county_codes$code,
                      year_rx = 0:21,
                      age_group = 0:3,
                      sex = 0:1,
@@ -19,7 +19,7 @@ make_grid <- function(rg){
   grd <- as.data.table(grd)
   
   # join county_fips
-  setkey(grd, county)
+  setkey(grd, code)
   setkey(county_codes, code)
   grd <- grd[county_codes,]
   
@@ -49,6 +49,11 @@ add_zero_rows <- function(data_inc, site, reg_list){
   grids <- rbindlist(grids)
   grids$count <- 0 # add count column
   grids$site <- site # add site column
+  
+  # making county_fips column in data_inc numeric
+  # so it can be joined with grids
+  data_inc <- data_inc %>% 
+    mutate(county_fips = as.numeric(county_fips))
   
   ## add the missing zero rows to incidence data
   key_cols <- setdiff(names(grids), c("count", "county_name"))

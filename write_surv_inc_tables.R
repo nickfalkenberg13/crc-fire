@@ -1,7 +1,7 @@
 source("read_freq_tables.R")
 source("add_zero_rows.R")
 
-site <- "LEFT"
+site <- "RIGHT"
 regs <- c("ES", "Pac", "SWMW")
 # read and process files for given site
 freq <- process_freq_data(site)

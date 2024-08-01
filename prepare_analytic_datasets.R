@@ -80,6 +80,16 @@ prepare_inc_data <- function(data_inc){
              year_RECD < 21 &
              race_RECD != 5)
   
+  # convert categorical variables to factors
+  cat_vars <- c("urban",
+                "age_RECD",
+                "race_RECD",
+                "sex_RECD",
+                "marital_status",
+                "SEER_registry")
+  data_cmbn <- data_cmbn %>% 
+    mutate(across(cat_vars, as.factor))
+  
   return(data_cmbn)
 }
 

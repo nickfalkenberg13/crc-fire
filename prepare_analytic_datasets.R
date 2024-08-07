@@ -90,6 +90,12 @@ prepare_inc_data <- function(data_inc){
   data_cmbn <- data_cmbn %>% 
     mutate(across(cat_vars, as.factor))
   
+  # remove rows where count is positive and offset is 0
+  data_cmbn <- data_cmbn %>% 
+    filter(!(count > 0 & count_offset == 0)) %>% 
+    # change 0 offset values to 1
+    mutate(count_offset = ifelse(count_offset == 0, 1, count_offset))
+  
   return(data_cmbn)
 }
 

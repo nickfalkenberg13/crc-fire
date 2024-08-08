@@ -74,27 +74,29 @@ prepare_inc_data <- function(data_inc){
   # unknown counties cannot have exposure and covariates assigned to them
   # 2021 is excluded in Wonder, so no offset would be available
   # race category 5 is unknown race
+  # also remove rows where offset is 0
   data_cmbn <- data_cmbn %>%
     filter(countyfips != 35999 &
              !grepl("Unknown", county_name) &
              year_RECD < 21 &
-             race_RECD != 5)
+             race_RECD != 5 &
+             count_offset > 0)
   
   # convert categorical variables to factors
+  # also, there are values for two time periods for the county CRC variables
+  # create new variables that use values from the closest time period
   cat_vars <- c("urban",
                 "age_RECD",
                 "race_RECD",
                 "sex_RECD",
                 "marital_status",
-                "SEER_registry")
+                "SEER_registry",
+                "StateAbbr")
   data_cmbn <- data_cmbn %>% 
-    mutate(across(cat_vars, as.factor))
-  
-  # remove rows where count is positive and offset is 0
-  data_cmbn <- data_cmbn %>% 
-    filter(!(count > 0 & count_offset == 0)) %>% 
-    # change 0 offset values to 1
-    mutate(count_offset = ifelse(count_offset == 0, 1, count_offset))
+    mutate(across(cat_vars, as.factor),
+           pct_CRC = ifelse(year <= 2007, `pct_CRC_2004-2007`, `pct_CRC_2008-2010`),
+           pct_Endo = ifelse(year <= 2007, `pct_Endo_2004-2007`, `pct_Endo_2008-2010`),
+           pct_FOBT = ifelse(year <= 2007, `pct_FOBT_2004-2007`, `pct_FOBT_2008-2010`))
   
   return(data_cmbn)
 }

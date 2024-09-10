@@ -5,17 +5,17 @@ setwd("data/exp_cov_inputs")
 #### Read files ####
 ### Exposures
 # wildfire data file
-data_exp_wf <- read.csv("WFVARS_FINAL.csv")
+data_exp_wf <- read.csv("wfvars_final.csv")
 
 ## Pollutants
 # PM 2.5 data file 
-data_exp_pm25 <- read.csv("PMVARS_FINAL.csv")
+data_exp_pm25 <- read.csv("pmvars_final.csv")
 
 # NO2 data file 
-data_exp_no2 <- read.csv("NO2VARS_FINAL.csv")
+data_exp_no2 <- read.csv("no2vars_final.csv")
 
 # Ozone data file 
-data_exp_ozn <- read.csv("OZONEVARS_FINAL.csv")
+data_exp_ozn <- read.csv("ozonevars_final.csv")
 
 ### Covariates
 # Time-varying county variables data file
@@ -34,15 +34,15 @@ data_cnty_crc <- read.csv("crc_county_metrics.csv")
 ### Time varying data (per county per year)
 ## NO2 and Ozone
 data_cnty_yr <- full_join(data_exp_no2, data_exp_ozn, 
-                          by = c("countyfips", "SEER_registry", "geoid10", "year"))
+                          by = c("countyfips", "SEER.registry", "GEOID10", "year"))
 ## PM 2.5
 # introduces rows for AK and HI, which will be NA for NO2 and Ozone columns
 data_cnty_yr <- full_join(data_cnty_yr, data_exp_pm25,
-                          by = c("countyfips", "SEER_registry", "geoid10", "year"))
+                          by = c("countyfips", "SEER.registry", "GEOID10", "year"))
 
 ## Wildfires
 data_cnty_yr <- full_join(data_cnty_yr, data_exp_wf,
-                          by = c("countyfips", "SEER_registry", "geoid10", "year" = "year_wf"))
+                          by = c("countyfips", "SEER.registry", "GEOID10", "year" = "year_wf"))
 
 ## County variables
 # doing a left join because the county variables have extra years and counties that are not needed

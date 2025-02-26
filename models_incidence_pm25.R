@@ -1,5 +1,5 @@
 
-source("prepare_analytic_datasets.R")
+# Libraries & Source Code ---------------------------------------------------------------
 
 library(MASS) # for negative binomial modeling
 library(pscl) # testing over-dispersion and running zero-inflated models
@@ -10,39 +10,15 @@ library(sandwich) # for robust standard errors
 library(performance) # for checking zero inflation
 library(vcdExtra) # for checking zero inflation
 
+source("prepare_analytic_datasets.R")
+source("model_functions.R")
 
 # Data Prep ---------------------------------------------------------------
 
 inc_LEFT <- fread("data/incidence_table-LEFT.csv")
 inc_RIGHT <- fread("data/incidence_table-RIGHT.csv")
 inc_RECTUM <- fread("data/incidence_table-RECTUM.csv")
-inc_OTHER <- fread("data/incidence_table-RECTUM.csv")
-
-# function for printing model results with robust SEs
-model_sum_rb <- function(pm){
-  # pm is a poisson model fit using glm
-  model_tib <- broom::tidy(coeftest(pm, vcov. = vcovHC(pm, type = 'HC3')), 
-                           conf.int = T)
-  model_tib$estimate_exp <- exp(model_tib$estimate)
-  model_tib$lower_exp <- exp(model_tib$conf.low)
-  model_tib$upper_exp <- exp(model_tib$conf.high)
-  print(model_tib[, c("term",
-                      "estimate", 
-                      "conf.low", 
-                      "conf.high", 
-                      "estimate_exp", 
-                      "lower_exp", 
-                      "upper_exp", 
-                      "p.value")], n = nrow(model_tib), width = Inf)
-}
-
-# function for creating model formulas
-mod_formula <- function(trms, resp_var = "count"){
-  str_trms <- paste(trms, collapse = " + ")
-  str_form <- paste(resp_var, str_trms, sep = " ~ ")
-  
-  return(formula(str_form))
-}
+inc_OTHER <- fread("data/incidence_table-OTHER.csv")
 
 ## create dataset
 # combine files for each site
@@ -695,7 +671,7 @@ formula_no_int <- mod_formula(c(exposure,
 mod_no_int <- glm(formula_no_int,
                   data = d_full,
                   family = poisson)
-lrtest(mod_no_int, psn_iqr_3cat_int) # fail to reject model without interaction
+lrtest(mod_no_int, psn_iqr_3cat_int)
 remove(mod_no_int, formula_no_int)
 
 ## 4-level variables
@@ -1055,3 +1031,166 @@ mod_no_int <- glm(formula_no_int,
                   family = poisson)
 lrtest(mod_no_int, psn_iqr_4cat_area_int) # fail to reject model without interaction
 remove(mod_no_int, formula_no_int)
+
+#### doing all of the above in a loop ####
+wildfire_vars <- c("popwf_3cat", "popwf_4cat", "numwf_3cat", "numwf_4cat", "areawf_3cat", "areawf_4cat")
+exposure <- "pm25_iqr"
+mod_terms_full <- c(exposure,
+                    "SEER.registry",
+                    "age_RECD",
+                    "race_RECD",
+                    "sex_RECD",
+                    "marital_status",
+                    "year_RECD",
+                    "medhouseinc",
+                    "DIABETES",
+                    "obesity",
+                    "LPA",
+                    "CSMOKING",
+                    "BINGE",
+                    "urban",
+                    "offset(log(count_offset))")
+
+results <- data.frame()
+for (wf in wildfire_vars) {
+  d_wf_split <- split(d_full, d_full[[wf]])
+  for (d_wf in d_wf_split){
+    val <- sort(unique(d_wf[[wf]]))
+    print(paste("Results for", wf, "=", val))
+    est <- get_effect_estimate(A = exposure, covars = mod_terms_full[-1], d = d_wf)
+    est$wf_subset_var <- wf
+    est$wf_subset_val <- val
+    results <- rbind(results, est)
+  }
+  print("-----------")
+}
+write.csv(results,
+          file = paste("model_results/wf_int_", exposure, ".csv", sep = ""),
+          row.names = F)
+
+# assess interaction
+for (wf in wildfire_vars) {
+  print(paste("Evaluating interaction for", wf))
+  ## run model with interaction term
+  int_term <- paste(exposure, wf, sep = "*") # set interaction term
+  formula_int <- mod_formula(c(int_term, mod_terms_full[-1]))
+  mod_int <- glm(formula_int,
+                 data = d_full,
+                 family = poisson)
+  
+  ## run model without interaction
+  formula_no_int <- mod_formula(c(wf, mod_terms_full))
+  mod_no_int <- glm(formula_no_int,
+                    data = d_full,
+                    family = poisson)
+  
+  ## run likelihood ratio test
+  print(lrtest(mod_no_int, mod_int))
+  print("________________________________")
+}
+
+# Stratified by Race ------------------------------------------------------
+
+# Repeat above wildfire stratified analysis for each race
+wildfire_vars <- c("popwf_3cat", "popwf_4cat", "numwf_3cat", "numwf_4cat", "areawf_3cat", "areawf_4cat")
+race_list <- c("White",
+               "Black",
+               "American Indian/Alaska Native",
+               "Asian/Pacific Islander",
+               "Hispanic/Latino")
+
+## PM2.5 IQR ---------------------------------------------------------------
+exposure <- "pm25_iqr"
+covars_no_race <- c("SEER.registry",
+                    "age_RECD",
+                    "sex_RECD",
+                    "marital_status",
+                    "year_RECD",
+                    "medhouseinc",
+                    "DIABETES",
+                    "obesity",
+                    "LPA",
+                    "CSMOKING",
+                    "BINGE",
+                    "urban",
+                    "offset(log(count_offset))")
+
+results <- data.frame()
+for (r in 0:4) {
+  race <- race_list[r+1]
+  print(paste("Race", race, sep = " = "))
+  d_race <- d_full %>% filter(race_RECD == r)
+  for (wf in wildfire_vars) {
+    d_wf_split <- split(d_race, d_race[[wf]])
+    for (d_wf in d_wf_split){
+      val <- sort(unique(d_wf[[wf]]))
+      print(paste("Results for", wf, "=", val))
+      est <- get_effect_estimate(A = exposure, covars = covars_no_race, d = d_wf)
+      est$race <- race
+      est$wf_subset_var <- wf
+      est$wf_subset_val <- val
+      results <- rbind(results, est)
+    }
+    print("-----------")
+  }
+  print("------------------------------------------------------------")
+}
+write.csv(results,
+          file = paste("model_results/wf_int_", exposure, "_race.csv", sep = ""),
+          row.names = F)
+
+#### Assessing effect modification ####
+# (within a level of race) is there EM between pm2.5 and wf?
+for (r in 0:4) {
+  print(paste("Race", race_list[r+1], sep = " = "))
+  for (wf in wildfire_vars) {
+    print(paste("Evaluating interaction for", wf))
+    ## run model with interaction term
+    int_term <- paste(exposure, wf, sep = "*") # set interaction term
+    formula_int <- mod_formula(c(int_term, covars_no_race))
+    mod_int <- glm(formula_int,
+                   data = d_full,
+                   family = poisson,
+                   subset = (race_RECD == r))
+    
+    ## run model without interaction
+    formula_no_int <- mod_formula(c(exposure, wf, covars_no_race))
+    mod_no_int <- glm(formula_no_int,
+                      data = d_full,
+                      family = poisson,
+                      subset = (race_RECD == r))
+    
+    ## run likelihood ratio test
+    print(lrtest(mod_no_int, mod_int))
+    print("________________________________")
+  }
+  print("------------------------------------------------------------")
+  print("------------------------------------------------------------")
+}
+
+#### Three-way interaction ####
+# comparing model with three way interaction (and sub-interactions)
+# to model with no interactions
+for (wf in wildfire_vars) {
+  print(paste("Evaluating interaction for", wf))
+  
+  ## run model with three-way interaction term
+  int_term <- paste(exposure, wf, "race_RECD", sep = "*") # set interaction term
+  formula_int <- mod_formula(c(int_term, covars_no_race))
+  mod_int <- glm(formula_int,
+                 data = d_full,
+                 family = poisson)
+  
+  ## run model without three-way interaction
+  int_two_ways <- c(paste(exposure, wf, sep = "*"),
+                    paste(exposure, "race_RECD", sep = "*"),
+                    paste(wf, "race_RECD", sep = "*"))
+  formula_no_int <- mod_formula(c(int_two_ways, covars_no_race))
+  mod_no_int <- glm(formula_no_int,
+                    data = d_full,
+                    family = poisson)
+  
+  ## run likelihood ratio test
+  print(lrtest(mod_no_int, mod_int))
+  print("________________________________")
+}

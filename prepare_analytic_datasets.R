@@ -75,12 +75,14 @@ prepare_inc_data <- function(data_inc){
   # 2021 is excluded in Wonder, so no offset would be available
   # race category 5 is unknown race
   # also remove rows where offset is 0
+  # and rows where the count is greater than the offset
   data_cmbn <- data_cmbn %>%
     filter(countyfips != 35999 &
              !grepl("Unknown", county_name) &
              year_RECD < 21 &
              race_RECD != 5 &
-             count_offset > 0)
+             count_offset > 0 &
+             (count_offset >= count))
   
   # convert categorical variables to factors
   # also, there are values for two time periods for the county CRC variables
@@ -90,8 +92,12 @@ prepare_inc_data <- function(data_inc){
                 "race_RECD",
                 "sex_RECD",
                 "marital_status",
-                "SEER_registry",
+                "SEER.registry",
                 "StateAbbr")
+  wf_vars <- paste(rep(paste(rep(c("num", "area", "pop"), each = length(3:5)), 3:5, sep = "wf_"), each = 2), 
+                   paste(rep("cat", each = 2), c("", "_noakhi"), sep = ""), 
+                   sep = "")
+  cat_vars <- append(cat_vars, wf_vars)
   data_cmbn <- data_cmbn %>% 
     mutate(across(cat_vars, as.factor),
            pct_CRC = ifelse(year <= 2007, `pct_CRC_2004-2007`, `pct_CRC_2008-2010`),

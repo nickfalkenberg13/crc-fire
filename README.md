@@ -1,5 +1,54 @@
 # crc-fire
-Analysis of colorectal cancer (CRC) incidence and survival in relation to air pollution and wildfires.
+## Project Overview
+
+Master's Thesis, Harvard TH Chan School of Public Health SM80 Epidemiology Program
+
+**Title**: Ambient air pollution exposure and colorectal cancer incidence in wildfire-impacted areas in the United States
+
+This project is a population-based cohort study of colorectal cancer (CRC) cases diagnosed between 2000 and 2020 throughout the United States. The aim was to examine associations between air pollution, wildfire exposure, and CRC incidence.
+
+### Study Population
+
+- Approx. 600,000 CRC cases diagnosed between 2000 and 2020.
+- Cancer cases recorded in Surveillance, Epidemiology, and End Results (SEER) registries.
+- Cases diagnosed in 609 counties and the state of Alaska.
+
+### Exposures
+
+Concentrations of the following air pollutants:
+
+1. PM<sub>2.5</sub>
+2. NO<sub>2</sub>
+3. O<sub>3</sub>
+
+Wildfire exposure, measured in three ways:
+
+1. Number of wildfires intersecting a county.
+2. Proportion of county area burned by wildfires.
+3. Proportion of county population living in census tracts intersecting wildfires.
+
+### Outcomes
+
+Colorectal cancer, as defined using ICD codes C18 (excluding C18.1 for appendix), C19, and C20, diagnosed between 2000 and 2020.
+
+### Data Sources
+
+- SEER
+  - CRC cases
+  - Individual-level data of cases
+  - County-level data of testing prevalence
+  - Rural-Urban Continuum Codes
+- Atmospheric Composition Analysis Group
+  - PM<sub>2.5</sub>
+- Monitoring Trends in Burn Severity
+  - Wildfires
+- PLACES
+  - County-level data on health and social factors
+- CDC Wonder
+  - Population totals stratified by county, year, and other factors
+
+
+
 
 ## Overview of Scripts
 **read_freq_tables.R**
@@ -48,9 +97,9 @@ Reads and combines data files for exposures (wildfire and air pollutants) and co
 
 Inputs:
 - Air pollution data sets
-  - PM2.5
-  - NO2
-  - Ozone
+  - PM<sub>2.5</sub>
+  - NO<sub>2</sub>
+  - O<sub>3</sub>
 - Wildfire data
 - Time-varying county variables
 - County-level moving metrics
@@ -67,3 +116,17 @@ Functions for combining exposure, covariate, and offset files with incidence tab
 **condense_offset_table.R**
 
 Processes the offset table output from `read_offset_tables.R` to match the categorical groupings used in the SEER data. The output is a recoded offset table.
+
+### Modeling scripts
+
+**model_functions.R**
+
+Contains helper functions to streamline model running and obtaining results.
+
+**models_incidence_x.R**
+
+Runs Poisson models for air pollutant *x*. May also contain code running exploratory data analysis.
+
+**models_incidence_pm25_strat_x.R**
+
+Runs models to assess three-way interaction between PM<sub>2.5</sub>, wildfires, and covariate *x*. First runs models stratified by *x* to get individual effect estimates for each level of *x*, then runs models to assess interaction.
